@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Syntaxnet App</string>
+    <string name="chat_activity">Chat Activity</string>
 </resources>

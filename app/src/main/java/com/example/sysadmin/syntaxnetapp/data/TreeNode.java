@@ -1,4 +1,4 @@
-package com.example.sysadmin.syntaxnetapp;
+package com.example.sysadmin.syntaxnetapp.data;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
