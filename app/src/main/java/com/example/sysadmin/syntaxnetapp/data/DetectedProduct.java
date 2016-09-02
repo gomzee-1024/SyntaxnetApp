@@ -7,4 +7,6 @@ public class DetectedProduct {
     public String category;
     public String subCategory;
     public String brand;
+    public boolean creditPayment;
+    public int creditDays=-1;
 }

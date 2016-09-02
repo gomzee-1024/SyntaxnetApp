@@ -28,7 +28,7 @@ public class ChatRecyclerViewAdapter extends RecyclerView.Adapter<ChatRecyclerVi
     LayoutInflater inflater;
     Context context;
 
-    ChatRecyclerViewAdapter(Context context, ArrayList<ChatMessage> list){
+    public ChatRecyclerViewAdapter(Context context, ArrayList<ChatMessage> list){
         inflater = LayoutInflater.from(context);
         this.list=list;
         this.context= context;

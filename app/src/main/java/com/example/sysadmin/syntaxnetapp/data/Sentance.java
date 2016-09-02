@@ -9,6 +9,7 @@ import java.util.List;
  * Created by sysadmin on 9/8/16.
  */
 public class Sentance {
+    public StringBuilder sentence = new StringBuilder("");
     public String words[];
     public String pos[];
     public String posTags[];
@@ -23,6 +24,11 @@ public class Sentance {
     public int typeOfSentence=0;
     public int rootInd=-1;
     public int typeOfResponce;
+    public int auxWord = -1;
+    public int whWord = -1;
+    public int bussinessWord = -1;
+    public int containsNum = -1;
+    public int containsInterjection = -1;
     public String category;
     public String subCategory;
     public String brand;
@@ -84,6 +90,12 @@ public class Sentance {
         }
         if(subjectInd!=-1){
             typeOfResponce = typeOfResponce|(1<<4);
+        }
+        if(bussinessWord!=-1){
+            typeOfResponce = typeOfResponce|(1<<5);
+        }
+        if(containsNum!=-1){
+            typeOfResponce = typeOfResponce|(1<<6);
         }
     }
 }

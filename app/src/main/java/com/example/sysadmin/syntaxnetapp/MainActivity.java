@@ -1,5 +1,6 @@
 package com.example.sysadmin.syntaxnetapp;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -16,6 +17,7 @@ import com.example.sysadmin.syntaxnetapp.api.ApiRequest;
 import com.example.sysadmin.syntaxnetapp.data.Constants;
 import com.example.sysadmin.syntaxnetapp.data.DetectedProduct;
 import com.example.sysadmin.syntaxnetapp.data.Sentance;
+import com.example.sysadmin.syntaxnetapp.data.TreeNode;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -36,9 +38,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button submit_btn;
     private TextView responseTv;
     private Sentance sentance;
-    private boolean advance_stage=false;
-    private  ApiRequest apiRequestObj = new ApiRequest();
+    private boolean advance_stage = false;
+    private ApiRequest apiRequestObj = new ApiRequest();
     private DetectedProduct dp = new DetectedProduct();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Sentance modeliseSyntaxnetResult(JSONObject result) throws JSONException {
         Sentance newsen = new Sentance();
         newsen.totalTokens = result.getInt("Total Tokens");
-        Log.d("maketree", "totaltokens: "+newsen.totalTokens);
+        Log.d("maketree", "totaltokens: " + newsen.totalTokens);
         newsen.words = new String[newsen.totalTokens];
         newsen.dependency = new String[newsen.totalTokens];
         newsen.pos = new String[newsen.totalTokens];
@@ -106,17 +109,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (i == 0 && checkForInterogation(newsen.words[i])) {
                 newsen.typeOfSentence = Constants.INTEROGATIVE_TYPE_SENTANCE;
             }
+            if(i==0 && checkForAuxWords(newsen.words[i])){
+                newsen.auxWord = i;
+            }
             if (subjDependency(newsen.dependency[i]) && newsen.subjectInd == -1) {
                 newsen.subjectInd = i;
             } else if (objDependency(newsen.dependency[i]) && newsen.objectInd == -1) {
                 newsen.objectInd = i;
             }
-            if(newsen.dependency[i].equalsIgnoreCase("neg") && newsen.negationInd==-1){ //check for negation
+            if (newsen.dependency[i].equalsIgnoreCase("neg") && newsen.negationInd == -1) { //check for negation
                 newsen.negationInd = i;
             }
-            if(newsen.dependency[i].equalsIgnoreCase("det") && newsen.determinerInd==-1){ //check for determiner
+            if (newsen.dependency[i].equalsIgnoreCase("det") && newsen.determinerInd == -1) { //check for determiner
                 newsen.determinerInd = i;
-                if(newsen.words[i].equalsIgnoreCase("no") && newsen.negationInd==-1){
+                if (newsen.words[i].equalsIgnoreCase("no") && newsen.negationInd == -1) {
                     newsen.negationInd = i;
                 }
             }
@@ -126,6 +132,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     newsen.mainverbInd = i;
                 }
             }
+        }
+        if(checkForAuxInterogation(newsen)){
+            newsen.typeOfSentence = Constants.INTEROGATIVE_TYPE_SENTANCE;
         }
         newsen.generateNumber(); // generate number for responce type
         newsen.makeTree();
@@ -164,9 +173,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //To check Interogation Type of Sentance
     private boolean checkForInterogation(String word) {
-        if (Constants.whWords.contains(word) || Constants.auxWords.contains(word)) {
+        if (Constants.whWords.contains(word)) {
             return true;
         } else {
+            return false;
+        }
+    }
+
+    private boolean checkForAuxWords(String word){
+        if(Constants.auxWords.contains(word)){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    private boolean checkForAuxInterogation(Sentance sen){
+        if(sen.auxWord!=-1 && sen.subjectInd!=-1 && sen.words[sen.subjectInd].equalsIgnoreCase("you")){
+            return true;
+        }
+        else{
             return false;
         }
     }
@@ -179,10 +205,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        return super.onOptionsItemSelected(item);
+        switch (item.getItemId()) {
+            case R.id.chat_act:
+                Intent intent = new Intent(this, ChatActivity.class);
+                startActivity(intent);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
-    public class GenerateData extends AsyncTask<JSONObject,String,Void>{
+    public class GenerateData extends AsyncTask<JSONObject, String, Void> {
 
         @Override
         protected Void doInBackground(JSONObject... jsonObjects) {
@@ -196,7 +229,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             brandDetection(sentance.words);
             generateResponce();
 
-            Log.d("data", "doInBackground: "+sentance.category +"|"+ sentance.subCategory );
+            Log.d("data", "doInBackground: " + sentance.category + "|" + sentance.subCategory);
 
             return null;
         }
@@ -207,37 +240,46 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         private void generateResponce() {
-            switch(sentance.typeOfResponce){
-                case 0 :case 12:case 28:
-                    Log.d("responce", "generateResponce: "+"responce1");
+            switch (sentance.typeOfResponce) {
+                case 0:
+                case 12:
+                case 28:
+                case 20:
+                    Log.d("responce", "generateResponce: " + "responce1");
                     responce1();
                     break;
-                case 22:case 30:
-                    Log.d("responce", "generateResponce: "+"responce2");
+                case 22:
+                case 30:
+                    Log.d("responce", "generateResponce: " + "responce2");
                     responce2();
                     break;
-                case 29:case 1:
-                    Log.d("responce", "generateResponce: "+"responce3");
+                case 29:
+                case 1:
+                case 13:
+                    Log.d("responce", "generateResponce: " + "responce3");
                     responce3();
                     break;
             }
         }
 
         private void responce3() {
-            if(!advance_stage){
-                String responce = new String("Then , What do you want?");
-                publishProgress(responce);
-            }else{
-                //payment term code
+            if (!advance_stage){
+                if(sentance.words[sentance.mainverbInd].equalsIgnoreCase("want")
+                    || sentance.words[sentance.mainverbInd].equalsIgnoreCase("need")) {
+                    String responce = new String("Then , What do you want?");
+                    publishProgress(responce);
+                }
+            } else {
+
             }
         }
 
         private void responce2() {
-            if((sentance.words[sentance.subjectInd].equalsIgnoreCase("you") ||
+            if ((sentance.words[sentance.subjectInd].equalsIgnoreCase("you") ||
                     sentance.words[sentance.subjectInd].equalsIgnoreCase("company")) &&
                     (sentance.words[sentance.mainverbInd].equalsIgnoreCase("have") ||
                             sentance.words[sentance.mainverbInd].equalsIgnoreCase("sell") ||
-                            sentance.words[sentance.mainverbInd].equalsIgnoreCase("provide")) && sentance.category==null) {
+                            sentance.words[sentance.mainverbInd].equalsIgnoreCase("provide")) && sentance.category == null) {
                 String url = "http://www.power2sme.com/p2sapi/ws/v3/skuCategoryList";
                 apiRequestObj.sendskuapirequest(url, new ApiRequest.SkuApiCallback() {
                     @Override
@@ -257,13 +299,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     }
                 });
-            }else if((sentance.words[sentance.subjectInd].equalsIgnoreCase("you") ||
+            } else if ((sentance.words[sentance.subjectInd].equalsIgnoreCase("you") ||
                     sentance.words[sentance.subjectInd].equalsIgnoreCase("company")) &&
                     (sentance.words[sentance.mainverbInd].equalsIgnoreCase("have") ||
                             sentance.words[sentance.mainverbInd].equalsIgnoreCase("sell") ||
-                            sentance.words[sentance.mainverbInd].equalsIgnoreCase("provide")) && sentance.category!=null){
-                dp.category=sentance.category;
-                String url = "http://www.power2sme.com/p2sapi/ws/v3/skuSubCategoryList?category="+sentance.category;
+                            sentance.words[sentance.mainverbInd].equalsIgnoreCase("provide")) && sentance.category != null) {
+                dp.category = sentance.category;
+                String url = "http://www.power2sme.com/p2sapi/ws/v3/skuSubCategoryList?category=" + sentance.category;
                 apiRequestObj.sendskuapirequest(url, new ApiRequest.SkuApiCallback() {
                     @Override
                     public void onSuccess(JSONObject result) {
@@ -285,25 +327,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         private void responce1() {
-            if(sentance.brand!=null){
-                dp.brand=sentance.brand;
+            if (sentance.brand != null) {
+                dp.brand = sentance.brand;
             }
-            if(sentance.category!=null && sentance.subCategory!=null){
-                String url = "http://www.power2sme.com/p2sapi/ws/v3/skuList?"+"category="+
-                        sentance.category+"&subcategory="+sentance.subCategory.replace("-","+");
+            if (sentance.category != null && sentance.subCategory != null) {
+                String url = "http://www.power2sme.com/p2sapi/ws/v3/skuList?" + "category=" +
+                        sentance.category + "&subcategory=" + sentance.subCategory.replace("-", "+");
                 apiRequestObj.sendskuapirequest(url, new ApiRequest.SkuApiCallback() {
                     @Override
                     public void onSuccess(JSONObject result) {
-                        int totalrecords=0;
+                        int totalrecords = 0;
                         try {
                             totalrecords = result.getInt("TotalRecord");
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
-                        if(totalrecords==0){
-                            Log.d("responce", "onSuccess: "+"no products found");
-                            String url1 = "http://www.power2sme.com/p2sapi/ws/v3/skuSubCategoryList?"+
-                                    "category="+sentance.category;
+                        if (totalrecords == 0) {
+                            Log.d("responce", "onSuccess: " + "no products found");
+                            String url1 = "http://www.power2sme.com/p2sapi/ws/v3/skuSubCategoryList?" +
+                                    "category=" + sentance.category;
                             dp.category = sentance.category;                                           //store the category
                             apiRequestObj.sendskuapirequest(url1, new ApiRequest.SkuApiCallback() {
                                 @Override
@@ -311,8 +353,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                     try {
                                         JSONArray data = result.getJSONArray("Data");
                                         StringBuilder responce = new StringBuilder("");
-                                        for(int i=0;i<data.length();++i){
-                                            responce.append(data.getString(i)+",");
+                                        for (int i = 0; i < data.length(); ++i) {
+                                            responce.append(data.getString(i) + ",");
                                         }
                                         responseTv.setText(responce.toString());
                                     } catch (JSONException e) {
@@ -320,68 +362,102 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                     }
                                 }
                             });
-                        }else{
+                        } else {
                             StringBuilder responce = new StringBuilder("");
                             responce.append("ok");
-                            dp.category=sentance.category; dp.subCategory=sentance.subCategory; //store the category and subcategory
+                            dp.category = sentance.category;
+                            dp.subCategory = sentance.subCategory; //store the category and subcategory
                             responseTv.setText(responce.toString());
                         }
                     }
                 });
-            }else if(sentance.category!=null && sentance.subCategory==null){
-                String url1 = "http://www.power2sme.com/p2sapi/ws/v3/skuSubCategoryList?"+
-                        "category="+sentance.category;
-                dp.category=sentance.category;                                              //store the category
+            } else if (sentance.category != null && sentance.subCategory == null) {
+                String url1 = "http://www.power2sme.com/p2sapi/ws/v3/skuSubCategoryList?" +
+                        "category=" + sentance.category;
+                dp.category = sentance.category;                                              //store the category
                 apiRequestObj.sendskuapirequest(url1, new ApiRequest.SkuApiCallback() {
                     @Override
                     public void onSuccess(JSONObject result) {
                         try {
                             JSONArray data = result.getJSONArray("Data");
                             StringBuilder responce = new StringBuilder("");
-                            for(int i=0;i<data.length();++i){
-                                responce.append(data.getString(i)+",");
+                            for (int i = 0; i < data.length(); ++i) {
+                                responce.append(data.getString(i) + ",");
                             }
-                            responce.append("\nWhich type of "+dp.category+" do you want?");
+                            responce.append("\nWhich type of " + dp.category + " do you want?");
                             responseTv.setText(responce.toString());
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
                     }
                 });
-            }else if(sentance.category==null && sentance.subCategory!=null){
-                if(dp.category!=null){
-                    String url = "http://www.power2sme.com/p2sapi/ws/v3/skuList?category="+dp.category+
-                            "&subcategory="+sentance.subCategory.replace("-","+");
+            } else if (sentance.category == null && sentance.subCategory != null) {
+                if (dp.category != null) {
+                    String url = "http://www.power2sme.com/p2sapi/ws/v3/skuList?category=" + dp.category +
+                            "&subcategory=" + sentance.subCategory.replace("-", "+");
                     apiRequestObj.sendskuapirequest(url, new ApiRequest.SkuApiCallback() {
                         @Override
                         public void onSuccess(JSONObject result) {
-                            int totalrecords=0;
+                            int totalrecords = 0;
                             try {
                                 totalrecords = result.getInt("TotalRecord");
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
-                            if(totalrecords==0){
+                            if (totalrecords == 0) {
                                 String responce = new String("Sorry that subcategory is not available");
                                 responseTv.setText(responce);
-                            }else{
+                            } else {
                                 String responce = new String("ok");
-                                dp.subCategory=sentance.subCategory; //store the subcategory
+                                dp.subCategory = sentance.subCategory; //store the subcategory
                                 responseTv.setText(responce.toString());
                             }
                         }
                     });
-                }else{
+                } else {
+                    String[] categories = new String[2];
+                    int cnt=0;
+                    StringBuilder responce = new StringBuilder("Which type of "+sentance.subCategory+" ");
+                    if(Constants.steelSubCategories.contains(sentance.subCategory)){
+                        categories[cnt++]="Steel";
+                        responce.append("Steel or ");
+                    }
+                    if(Constants.aluminiumSubCategories.contains(sentance.subCategory)){
+                        categories[cnt++]="Aluminium";
+                        responce.append("Aluminium ");
+                    }
+                    responce.append("you want?");
+                    if(cnt>1){
+                        publishProgress(responce.toString());
+                    }else{
+                        publishProgress("ok you want Steel "+sentance.subCategory);
+                        dp.category="Steel";
+                    }
+                }
+            } else {
+                boolean order = false;
+                //To check order keyword
+                TreeNode<Integer> node = sentance.topologySentence.get(sentance.rootInd);
+                for (int i = 0; i < node.children.size(); ++i) {
+                    if (sentance.words[node.children.get(i)].equalsIgnoreCase("order")) {
+                        order = true;
+                    }
+                }
+                if (sentance.objectInd != -1 && sentance.words[sentance.objectInd].equalsIgnoreCase("order")) {
+                    order = true;
+                }
+
+                if (order == true) {
+                    String responce = new String("What do you want to order?");
+                    publishProgress(responce);
+                } else {
                     String responce = new String("Sorry,I didn't get you?");
                     publishProgress(responce);
                 }
-            }else{
-                String responce = new String("Sorry,I didn't get you?");
-                publishProgress(responce);
             }
         }
 
-        public void categorize(String[] tokens){
+        public void categorize(String[] tokens) {
             InputStream modelIn;
             try {
                 modelIn = getAssets().open("en-ner-category.bin");
@@ -390,14 +466,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.d("string[0]_length", "doInBackground: " + tokens.length);
                 Span span[] = namefinder.find(tokens);
                 for (int i = 0; i < span.length; ++i) {
-                    sentance.category=span[i].getType();
+                    sentance.category = span[i].getType();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        public void subcategorize(String[] tokens){
+        public void subcategorize(String[] tokens) {
             InputStream modelIn;
             try {
                 modelIn = getAssets().open("en-ner-sub-category1.bin");
@@ -406,7 +482,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.d("string[0]_length", "doInBackground: " + tokens.length);
                 Span span[] = namefinder.find(tokens);
                 for (int i = 0; i < span.length; ++i) {
-                    sentance.subCategory=span[i].getType();
+                    sentance.subCategory = span[i].getType();
                 }
 
             } catch (InvalidFormatException e) {
@@ -416,7 +492,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
 
-        public void brandDetection(String[] tokens){
+        public void brandDetection(String[] tokens) {
             InputStream modelIn;
             try {
                 modelIn = getAssets().open("en-ner-brand.bin");
@@ -425,7 +501,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.d("string[0]_length", "doInBackground: " + tokens.length);
                 Span span[] = namefinder.find(tokens);
                 for (int i = 0; i < span.length; ++i) {
-                    sentance.brand=span[i].getType();
+                    sentance.brand = span[i].getType();
                 }
 
             } catch (InvalidFormatException e) {
